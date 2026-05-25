@@ -122,6 +122,26 @@ layout.getStyle().set("width", "600px");
 avatar.getStyle().set("--vaadin-avatar-size", "48px");
 ```
 
+## Gotchas
+
+`VerticalLayout` defaults:
+- Padding ON — call `setPadding(false)` if not wanted
+- Width 100% of parent
+- `alignItems` START — children do not stretch horizontally; call `setAlignItems(STRETCH)` or `setWidthFull()` per child to fill the width
+- `justifyContentMode` controls the vertical (main) axis
+
+`HorizontalLayout` defaults:
+- Padding OFF
+- Width shrinks to content — call `setWidthFull()` if it should fill the parent
+- `alignItems` STRETCH — children stretch vertically to fill the layout height (a `Button` next to a `TextField` will silently grow)
+- `justifyContentMode` controls the horizontal (main) axis
+
+Other traps:
+- For purely visual containers with no flex semantics, prefer `Div` — it avoids all of the above defaults
+- `flex-shrink` is on by default — a fixed-size child shrinks when placed next to a `setWidthFull()` sibling; call `layout.setFlexShrink(component, 0)` to prevent it, or use `layout.setFlexGrow(fullSizeComponent, 1)` instead of `setWidthFull()` to avoid the conflict altogether
+- `setWidthFull()` on a child in a content-hugging `HorizontalLayout` expands the layout rather than fitting it; use `setAlignItems(STRETCH)` instead
+- A layout child's minimum size defaults to its content size; this causes unexpected scrollbars in `Scroller` / `TabSheet`; fix with `component.setMinWidth("0")` or `setMinHeight("0")`
+
 ## When to ask for clarification
 
 - Multiple Vaadin components could fit the visual design
