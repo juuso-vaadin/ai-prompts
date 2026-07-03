@@ -1,6 +1,6 @@
 ---
 name: figma-to-aura-theme
-description: Map a Figma Aura design system to Vaadin Aura theme CSS configuration. Use when the user provides a Figma URL and wants to configure the Aura theme to match it. Triggers on requests like "set up Aura theme from Figma", "configure Aura to match my design", "generate Aura CSS from Figma", or when a Figma URL is combined with any Aura theming request.
+description: Map a Figma Aura design system to Vaadin Aura theme CSS configuration. Use when the user provides a Figma URL and wants to configure the Aura theme to match it. Triggers on requests like "set up Aura theme from Figma", "configure Aura to match my design", "generate Aura CSS from Figma", or when a Figma URL is combined with any Aura theming request. Applies when the target app uses the Aura theme (`@StyleSheet(Aura.STYLESHEET)`, Vaadin's default from 25.0 onwards) or has no theme configured yet. Does NOT apply to apps still on the classic Lumo theme (`@StyleSheet(Lumo.STYLESHEET)`, no Aura import) — use figma-to-lumo-theme for those instead.
 ---
 
 # Figma to Aura Theme
@@ -26,31 +26,15 @@ Create TODOs based on these steps.
 
 ### Step 1: Extract Figma Variables from All Available Modes
 
-First, enumerate the variable collection modes in the Figma file using `use_figma`:
+**Start with `get_variable_defs`** on a representative node. It returns values for the file's
+current/default mode only — it takes no mode parameter, and there's no documented way to switch
+modes from outside and have it pick that up. If the file only has one mode, that's all you need.
 
-```javascript
-// Enumerate variable collection modes
-const collections = figma.variables.getLocalVariableCollections();
-collections.forEach(c => console.log(c.name, JSON.stringify(c.modes)));
-```
-
-Then call `get_variable_defs` once per mode that exists. Pass a node ID from the URL or any representative frame.
-
-```javascript
-// URL: https://www.figma.com/design/UmlCb1eLW7P72bYFgJmmSY/...?node-id=4977-9489
-// → fileKey: UmlCb1eLW7P72bYFgJmmSY, nodeId: 4977:9489
-get_variable_defs({ fileKey: "...", nodeId: "..." })
-```
-
-`get_variable_defs` returns values for the currently active mode. To get the other mode's values, switch the mode via `use_figma` before calling `get_variable_defs` again:
-
-```javascript
-// Switch a variable collection to dark mode
-const collection = figma.variables.getLocalVariableCollections()
-  .find(c => c.name === 'Colors');
-const darkMode = collection.modes.find(m => m.name.toLowerCase().includes('dark'));
-// Set the mode on a target node before calling get_variable_defs
-```
+If the file has **multiple modes** (e.g. light/dark), use `use_figma` instead, and read each
+variable's value across all of its modes in one pass (`variable.valuesByMode`, keyed by mode) —
+rather than trying to toggle the active mode and re-call `get_variable_defs`, which isn't how mode
+selection works. Before your first `use_figma` call in this workflow, load its required `figma-use`
+guidance (skill or MCP resource) — its own instructions mark this mandatory.
 
 **Color scheme rule:**
 - If the file has **both light and dark modes** → always implement both; set `color-scheme: light dark`
@@ -185,7 +169,7 @@ Follow the file creation workflow:
 3. Create the CSS file in the same directory
 4. Add `@import "filename.css";` at the top of `styles.css`
 
-**Only include properties that differ from Aura defaults.** Do not set properties that match the default values.
+**Only include properties that differ from Aura defaults.** Do not set properties that match the default values. Use the default values documented in this skill (or looked up via the Vaadin MCP's `get_theme_css_properties` with `theme: "aura"`, and the app's Vaadin version) — don't guess a default from memory; a wrong assumption produces a CSS declaration that looks theme-driven but is actually just silently re-asserting (or subtly missing) the real default.
 
 **CSS structure:**
 

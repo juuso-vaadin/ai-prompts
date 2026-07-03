@@ -1,6 +1,14 @@
 ---
 name: figma-to-lumo-theme
-description: Map Figma design tokens to Lumo CSS variables by extracting tokens, categorizing them, and generating CSS declarations in the styles.css file with only non-default values.
+description: >
+  Map Figma design tokens to Lumo CSS variables by extracting tokens, categorizing them, and
+  generating CSS declarations in the styles.css file with only non-default values. Use this
+  skill whenever the user wants to apply Figma design tokens/colors/typography to a Vaadin
+  app's theme and the app uses the classic Lumo theme (`@StyleSheet(Lumo.STYLESHEET)`, no Aura
+  import). Does NOT apply to apps using the Aura theme (`@StyleSheet(Aura.STYLESHEET)`,
+  Vaadin's default from 25.0 onwards) — use the figma-to-aura-theme skill for those, since Aura
+  properties don't map 1:1 from Lumo variable names. If the app's theme is unclear, check the
+  app shell class (`AppShellConfigurator`) before picking a skill, or ask the user.
 ---
 
 # Figma to Lumo CSS Variables Mapping Template
@@ -84,7 +92,7 @@ Many component variables are directly available in Figma:
 - `vaadin-input-field-background` → `--vaadin-input-field-background`
 - `vaadin-input-field-border-color` → `--vaadin-input-field-border-color`
 - `vaadin-input-field-border-width` → `--vaadin-input-field-border-width`
-- Use Vaadin MCP for additional component variables if needed
+- Use the Vaadin MCP's `get_theme_css_properties` (theme: `"lumo"`) for additional component variables
 
 ### Step 3: Extract Component Styles From Figma with `get_design_context`
 - Contains the most detailed component information
@@ -101,7 +109,10 @@ get_full_document("components/button/styling-flow.md")
 
 Use Vaadin MCP to identify Lumo theme defaults
 ```javascript
-// Search for Lumo style properties
+// Look up the full set of Lumo CSS custom properties and their defaults
+get_theme_css_properties(theme: "lumo", vaadin_version: "<app's version>")
+
+// Or search docs for narrative context
 search_vaadin_docs("lumo style properties")
 get_full_document("styling/lumo/lumo-style-properties.md")
 ```
@@ -109,6 +120,18 @@ get_full_document("styling/lumo/lumo-style-properties.md")
 
 ### Step 5: Generate CSS Variable Declarations (Only Non-Default Values)
 **IMPORTANT**: Only set CSS variables that differ from Lumo defaults. Do not override variables with their default values.
+
+**Verify defaults, don't assume them.** "Differs from default" requires actually knowing the
+default — don't rely on memory or a plausible-looking guess. Look them up in the project or with
+the Vaadin MCP's `get_theme_css_properties` (theme: `"lumo"`).
+A wrong assumption produces spacing/sizing that looks
+theme-driven but silently doesn't match the design — for example, assuming
+`--vaadin-padding-l` is 24px when it actually resolves to 16px in Lumo, or reusing a plain
+`--vaadin-padding-l` fallback for a 24px gap when the value that's actually 24px is
+`--vaadin-padding-xl`. When custom CSS elsewhere in the app (outside this token-mapping step)
+references a base `--vaadin-*` property with a hardcoded fallback, confirm that property name
+actually exists — an invented name (e.g. a "-secondary" or "-alt" suffix that sounds right)
+silently no-ops and the fallback becomes the permanent, untracked value.
 
 Create CSS declarations in `styles.css`:
 
